@@ -91,19 +91,21 @@ def calculate_latency(config, LUT):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o",dest="output_fname")
+    parser.add_argument("-o",dest="output_fname",default="temp_lat.txt")
+    parser.add_argument("-it",dest="iters",type=int,default=25)
+    parser.add_argument("-n",dest="N",type=int,default=2000)
     args = parser.parse_args()
     hw_api = HWAPI("HW-NAS-Bench-v1_0.pickle", search_space="fbnet")
     arch_configs_ref = np.load("config_ref.npz")['arch_configs_ref']
     print("Computing LUT...")
-    LUT = make_LUT(N=25)
+    LUT = make_LUT(N=args.iters)
     input_vec = torch.randn(1,3,224,224)
     print("Measuring Latency...")
     with open(args.output_fname,"w") as f:
-        for n in tqdm(range(len(arch_configs_ref))):
+        for n in tqdm(range(args.N)):
             arch = arch_configs_ref[n]
             summed_lat = calculate_latency(arch,LUT)
             config = hw_api.get_net_config(arch,'ImageNet')
             network = FBNet_Infer(config) # create the network from configurration
-            lat = latency(network,input_vec,N=25)
+            lat = latency(network,input_vec,N=args.iters)
             f.write(f"{summed_lat},{lat.mean()}\n")
