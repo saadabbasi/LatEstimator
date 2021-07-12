@@ -1,5 +1,6 @@
 from hw_nas_bench_api import HWNASBenchAPI as HWAPI
-from hw_nas_bench_api.fbnet_models import FBNet_Infer, OPS, AUX_OPS, ConvNorm, PRIMITIVES
+from hw_nas_bench_api.fbnet_models import FBNet_Infer, OPS, ConvNorm, PRIMITIVES
+import argparse
 import torch as torch
 import numpy as np
 import time
@@ -88,15 +89,20 @@ def calculate_latency(config, LUT):
         summed_lat += LUT[op][layer_id].mean()
     return summed_lat
 
-hw_api = HWAPI("HW-NAS-Bench-v1_0.pickle", search_space="fbnet")
-arch_configs_ref = generate_random_set_arch()
-LUT = make_LUT()
-input_vec = torch.randn(1,3,224,224)
-with open("latency_2.txt","w") as f:
-    for n in tqdm(range(len(arch_configs_ref))):
-        arch = arch_configs_ref[n]
-        summed_lat = calculate_latency(arch,LUT)
-        config = hw_api.get_net_config(arch,'ImageNet')
-        network = FBNet_Infer(config) # create the network from configurration
-        lat = latency(network,input_vec,N=25)
-        f.write(f"{summed_lat},{lat.mean()}\n")
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-o",dest="output_fname")
+    args = parser.parse_args()
+    hw_api = HWAPI("HW-NAS-Bench-v1_0.pickle", search_space="fbnet")
+    arch_configs_ref = np.load("config_ref.npz")['arch_configs_ref']
+
+    LUT = make_LUT()
+    input_vec = torch.randn(1,3,224,224)
+    with open(args.output_fname,"w") as f:
+        for n in tqdm(range(len(arch_configs_ref))):
+            arch = arch_configs_ref[n]
+            summed_lat = calculate_latency(arch,LUT)
+            config = hw_api.get_net_config(arch,'ImageNet')
+            network = FBNet_Infer(config) # create the network from configurration
+            lat = latency(network,input_vec,N=25)
+            f.write(f"{summed_lat},{lat.mean()}\n")
