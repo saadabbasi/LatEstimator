@@ -72,7 +72,7 @@ def make_LUT(N=100):
                     (14,14,112,184,6,2),
                     (7,7,184,352,7,1)]
     
-    for op in PRIMITIVES:
+    for op in tqdm(PRIMITIVES):
         for config in layer_configs:
             block = OPS[op](config[2],config[3],config[4],config[5])
             LUT[op].append(latency(block, torch.randn(1,config[2],config[0],config[1])))
