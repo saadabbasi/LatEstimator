@@ -47,7 +47,7 @@ def make_LUT(N=100):
         'output':None}
     
     convnorm = ConvNorm(3,16,3,2)
-    LUT['input'] = latency(convnorm, torch.randn(1,3,224,224))
+    LUT['input'] = latency(convnorm, torch.randn(1,3,224,224),N=N)
     # imgh, imgw, cin, cout, layer_id, stride
     layer_configs = [(112,112,16,16,1,1),
                     (112,112,16,24,2,2),
@@ -75,11 +75,11 @@ def make_LUT(N=100):
     for op in tqdm(PRIMITIVES):
         for config in layer_configs:
             block = OPS[op](config[2],config[3],config[4],config[5])
-            LUT[op].append(latency(block, torch.randn(1,config[2],config[0],config[1])))
+            LUT[op].append(latency(block, torch.randn(1,config[2],config[0],config[1])),N=N)
     
-    LUT['pointwise'] = latency(ConvNorm(352,1504,1,1),torch.randn(1,352,7,7))
-    LUT['avgpool'] = latency(nn.AdaptiveAvgPool2d(1),torch.randn(1,1504,7,7))
-    LUT['output'] = latency(nn.Linear(1504, 1000),torch.randn(1,1504))
+    LUT['pointwise'] = latency(ConvNorm(352,1504,1,1),torch.randn(1,352,7,7),N=N)
+    LUT['avgpool'] = latency(nn.AdaptiveAvgPool2d(1),torch.randn(1,1504,7,7),N=N)
+    LUT['output'] = latency(nn.Linear(1504, 1000),torch.randn(1,1504),N=N)
     return LUT
 
 def calculate_latency(config, LUT):
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     hw_api = HWAPI("HW-NAS-Bench-v1_0.pickle", search_space="fbnet")
     arch_configs_ref = np.load("config_ref.npz")['arch_configs_ref']
     print("Computing LUT...")
-    LUT = make_LUT()
+    LUT = make_LUT(N=25)
     input_vec = torch.randn(1,3,224,224)
     print("Measuring Latency...")
     with open(args.output_fname,"w") as f:
