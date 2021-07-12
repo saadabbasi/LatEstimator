@@ -95,9 +95,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     hw_api = HWAPI("HW-NAS-Bench-v1_0.pickle", search_space="fbnet")
     arch_configs_ref = np.load("config_ref.npz")['arch_configs_ref']
-
+    print("Computing LUT...")
     LUT = make_LUT()
     input_vec = torch.randn(1,3,224,224)
+    print("Measuring Latency...")
     with open(args.output_fname,"w") as f:
         for n in tqdm(range(len(arch_configs_ref))):
             arch = arch_configs_ref[n]
