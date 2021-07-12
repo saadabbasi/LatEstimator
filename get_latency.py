@@ -75,7 +75,7 @@ def make_LUT(N=100):
     for op in tqdm(PRIMITIVES):
         for config in layer_configs:
             block = OPS[op](config[2],config[3],config[4],config[5])
-            LUT[op].append(latency(block, torch.randn(1,config[2],config[0],config[1])),N=N)
+            LUT[op].append(latency(block, torch.randn(1,config[2],config[0],config[1]),N=N))
     
     LUT['pointwise'] = latency(ConvNorm(352,1504,1,1),torch.randn(1,352,7,7),N=N)
     LUT['avgpool'] = latency(nn.AdaptiveAvgPool2d(1),torch.randn(1,1504,7,7),N=N)
