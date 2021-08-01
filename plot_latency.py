@@ -17,23 +17,25 @@ parser.add_argument("-i",dest="input_fname")
 args = parser.parse_args()
 
 latencies = genfromtxt(args.input_fname, delimiter=',',skip_header=True)
-exp_val = latencies[:,1]#*1e3 # measured
-theo_val = latencies[:,0]#*1e3 # summed
+exp_val = latencies[:,1]*1e3 # measured
+theo_val = latencies[:,0]*1e3 # summed
 
 fig, ax = plt.subplots(1,1)
 ax.scatter(theo_val, exp_val,s=5,color='orange')
-ax.set_xlabel('Summed Latency (s)')
-ax.set_ylabel('Direct Measurement (s)')
-xmin = latencies[:,0].min()#*1e3
-xmax = latencies[:,0].max()#*1e3
+ax.set_xlabel('Summed Latency (ms)')
+ax.set_ylabel('Direct Measurement (ms)')
+xmin = min(exp_val.min(), theo_val.min())-0.05
+xmax = max(exp_val.max(), theo_val.max())+0.05
 xlin = np.linspace(0,50,100)
 ax.plot(xlin,xlin,0.5)
 ax.plot(xlin,margin_line(0.1,exp_val,xlin),linestyle='--',color='gray')
 ax.plot(xlin,margin_line(-0.1,exp_val,xlin),linestyle='--',color='gray')
 ax.plot(xlin,margin_line(0.2,exp_val,xlin),linestyle='--',color='gray')
 ax.plot(xlin,margin_line(-0.2,exp_val,xlin),linestyle='--',color='gray')
-ax.set_xlim(exp_val.min(), exp_val.max())
-ax.set_ylim(exp_val.min(), exp_val.max())
+# ax.set_xlim(exp_val.min(), exp_val.max())
+# ax.set_ylim(exp_val.min(), exp_val.max())
+ax.set_xlim(xmin,xmax)
+ax.set_ylim(xmin,xmax)
 ax.set_aspect('equal')
 
 plt.savefig(args.output_fname)

@@ -16,7 +16,7 @@ def latency(net, input_v, N=100, use_gpu=False):
     lat = []
     if use_gpu: 
         net.to('cuda:0')
-        input_v.to('cuda:0')
+        input_v = input_v.to('cuda:0')
     for n in range(N):
         start = time.time()
         y = net(input_v)
@@ -34,7 +34,7 @@ def generate_random_set_arch(N=2000):
 
     return arch_configs
 
-def make_LUT(N=100):
+def make_LUT(N=100, use_gpu=False):
     LUT = {'input':None,
         'k3_e1':[],
         'k3_e1_g2':[],
@@ -50,7 +50,7 @@ def make_LUT(N=100):
         'output':None}
     
     convnorm = ConvNorm(3,16,3,2)
-    LUT['input'] = latency(convnorm, torch.randn(1,3,224,224),N=N)
+    LUT['input'] = latency(convnorm, torch.randn(1,3,224,224),N=N,use_gpu=use_gpu)
     # imgh, imgw, cin, cout, layer_id, stride
     layer_configs = [(112,112,16,16,1,1),
                     (112,112,16,24,2,2),
@@ -75,14 +75,18 @@ def make_LUT(N=100):
                     (14,14,112,184,6,2),
                     (7,7,184,352,7,1)]
     
-    for op in tqdm(PRIMITIVES):
+    if use_gpu:
+        desc = "Computing LUT with GPU"
+    else:
+        desc = "Computing LUT with CPU"
+    for op in tqdm(PRIMITIVES,desc=desc):
         for config in layer_configs:
             block = OPS[op](config[2],config[3],config[4],config[5])
-            LUT[op].append(latency(block, torch.randn(1,config[2],config[0],config[1]),N=N))
+            LUT[op].append(latency(block, torch.randn(1,config[2],config[0],config[1]),N=N,use_gpu=use_gpu))
     
-    LUT['pointwise'] = latency(ConvNorm(352,1504,1,1),torch.randn(1,352,7,7),N=N)
-    LUT['avgpool'] = latency(nn.AdaptiveAvgPool2d(1),torch.randn(1,1504,7,7),N=N)
-    LUT['output'] = latency(nn.Linear(1504, 1000),torch.randn(1,1504),N=N)
+    LUT['pointwise'] = latency(ConvNorm(352,1504,1,1),torch.randn(1,352,7,7),N=N,use_gpu=use_gpu)
+    LUT['avgpool'] = latency(nn.AdaptiveAvgPool2d(1),torch.randn(1,1504,7,7),N=N,use_gpu=use_gpu)
+    LUT['output'] = latency(nn.Linear(1504, 1000),torch.randn(1,1504),N=N,use_gpu=use_gpu)
     return LUT
 
 def calculate_latency(config, LUT):
@@ -102,12 +106,15 @@ if __name__ == '__main__':
 
     hw_api = HWAPI("HW-NAS-Bench-v1_0.pickle", search_space="fbnet")
     arch_configs_ref = np.load("config_ref.npz")['arch_configs_ref']
-    print("Computing LUT...")
-    LUT = make_LUT(N=args.iters)
+    LUT = make_LUT(N=args.iters, use_gpu=args.use_gpu)
     input_vec = torch.randn(1,3,224,224)
-    print("Measuring Latency...")
+    if args.use_gpu:
+        desc = "Measuring Latency with GPU"
+    else:
+        desc = "Measuring Latency with CPU"
+
     with open(args.output_fname,"w") as f:
-        for n in tqdm(range(args.N)):
+        for n in tqdm(range(args.N),desc):
             arch = arch_configs_ref[n]
             summed_lat = calculate_latency(arch,LUT)
             config = hw_api.get_net_config(arch,'ImageNet')
