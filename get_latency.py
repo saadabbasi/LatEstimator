@@ -12,8 +12,11 @@ np.random.seed(42)
 def get_rand_arch():
     return np.random.choice(np.arange(9),22)
 
-def latency(net, input_v, N=100):
+def latency(net, input_v, N=100, use_gpu=False):
     lat = []
+    if use_gpu: 
+        net.to('cuda:0')
+        input_v.to('cuda:0')
     for n in range(N):
         start = time.time()
         y = net(input_v)
@@ -91,10 +94,12 @@ def calculate_latency(config, LUT):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o",dest="output_fname",default="temp_lat.txt")
-    parser.add_argument("-it",dest="iters",type=int,default=25)
-    parser.add_argument("-n",dest="N",type=int,default=2000)
+    parser.add_argument("-o", dest="output_fname", default="temp_lat.txt")
+    parser.add_argument("-it", dest="iters", type=int, default=25)
+    parser.add_argument("-n", dest="N", type=int, default=2000)
+    parser.add_argument("-gpu", dest="use_gpu", action="store_true")
     args = parser.parse_args()
+
     hw_api = HWAPI("HW-NAS-Bench-v1_0.pickle", search_space="fbnet")
     arch_configs_ref = np.load("config_ref.npz")['arch_configs_ref']
     print("Computing LUT...")
@@ -107,5 +112,5 @@ if __name__ == '__main__':
             summed_lat = calculate_latency(arch,LUT)
             config = hw_api.get_net_config(arch,'ImageNet')
             network = FBNet_Infer(config) # create the network from configurration
-            lat = latency(network,input_vec,N=args.iters)
+            lat = latency(network,input_vec,N=args.iters,use_gpu=args.use_gpu)
             f.write(f"{summed_lat},{lat.mean()}\n")
