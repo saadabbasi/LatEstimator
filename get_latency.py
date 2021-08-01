@@ -114,6 +114,7 @@ if __name__ == '__main__':
         desc = "Measuring Latency with CPU"
 
     with open(args.output_fname,"w") as f:
+        f.write("Summed Lat,Measured Lat\n")
         for n in tqdm(range(args.N),desc):
             arch = arch_configs_ref[n]
             summed_lat = calculate_latency(arch,LUT)
