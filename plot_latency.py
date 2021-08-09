@@ -17,8 +17,8 @@ parser.add_argument("-i",dest="input_fname")
 args = parser.parse_args()
 
 latencies = genfromtxt(args.input_fname, delimiter=',',skip_header=True)
-exp_val = latencies[:,1]*1e3 # measured
-theo_val = latencies[:,0]*1e3 # summed
+exp_val = latencies[:,2]*1e3 # measured
+theo_val = latencies[:,1]*1e3 # summed
 
 fig, ax = plt.subplots(1,1)
 ax.scatter(theo_val, exp_val,s=5,color='orange')

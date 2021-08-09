@@ -71,12 +71,12 @@ class LUT:
     def total_latency(self):
         return sum(self.LUT.values())
 
-arch_idxs = random_arch_idx(5000)
+arch_idxs = random_arch_idx(1000)
 use_gpu = True
-the_lut = LUT(iters=25)
+the_lut = LUT(iters=25, use_gpu=use_gpu)
 x = torch.randn(1,3,32,32)
 api = create('/home/saad/datasets/nats/NATS-tss-v1_0-3ffb9-simple', 'tss', fast_mode=True, verbose=False)
-with open("nasbench201-proto-gpu.txt", "w") as f:
+with open("nasbench201-proto-gpu2.txt", "w") as f:
     f.write("idx,Summed Lat,Measured Lat\n")
     for idx in tqdm(arch_idxs):
         config = api.get_net_config(idx, 'cifar10')
@@ -84,5 +84,5 @@ with open("nasbench201-proto-gpu.txt", "w") as f:
         network = xautodl.models.get_cell_based_tiny_net(config)
         measured = latency(network,x,N=25, use_gpu=use_gpu).mean()
         computed = the_lut.total_latency()
-        f.write(f"{computed},{measured}\n")
+        f.write(f"{idx},{computed},{measured},{config['C']},{config['N']},{config['arch_str']}\n")
         # print(idx, latency(network,x).mean()*1e3, the_lut.total_latency()*1e3)
